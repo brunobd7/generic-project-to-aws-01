@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.1.1'
     id 'io.spring.dependency-management' version '1.1.0'
+    id 'com.palantir.docker' version '0.35.0'
 }
 
 group = 'com.example'
@@ -9,6 +10,25 @@ version = '0.0.1-SNAPSHOT'
 
 java {
     sourceCompatibility = '17'
+}
+
+bootJar {
+	archiveBaseName = 'generic-project-to-aws-01'
+	version =  '1.0.1'
+    mainClass = "com.example.genericprojecttoaws01.GenericProjectToAws01Application"
+}
+
+task unpack(type: Copy) {
+	dependsOn bootJar
+	from(zipTree(tasks.bootJar.outputs.files.singleFile))
+	into("build/dependency")
+}
+
+
+docker {
+	name "${project.group}/${bootJar.archiveBaseName}:${bootJar.archiveVersion}"
+	copySpec.from(tasks.unpack.outputs).into("dependency")
+	buildArgs(['DEPENDENCY': "dependency"])
 }
 
 repositories {
@@ -21,6 +41,6 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
-tasks.named('test') {
+test{
     useJUnitPlatform()
 }
